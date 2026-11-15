@@ -1,0 +1,13 @@
+{
+  "name": "Staff Skill",
+  "description": "Atalhos contextuais de moderação, ações com confirmação e visualizador de avatar com opção nativa de salvar.",
+  "authors": [
+    {
+      "name": "anokbass"
+    }
+  ],
+  "main": "src/index.ts",
+  "vendetta": {
+    "icon": "ic_badge_staff"
+  }
+}
