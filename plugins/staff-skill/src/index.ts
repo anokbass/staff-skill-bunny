@@ -295,19 +295,41 @@ function avatarUrl(user: AnyObject, guildId?: string): string {
     return "";
 }
 
-function openAvatar(url: string): void {
+function openAvatar(url: string, event?: AnyObject, guildId?: string): void {
     const viewer = findByProps("openMediaModal") as AnyObject;
     if (typeof viewer?.openMediaModal !== "function") {
         showToast("O visualizador de imagens não está disponível nesta versão.");
         return;
     }
 
+    const nativeEvent = event?.nativeEvent ?? event;
+    const channelId = asId((findByStoreName("SelectedChannelStore") as AnyObject)?.getChannelId?.());
+    const selectedGuildId = asId((findByStoreName("SelectedGuildStore") as AnyObject)?.getGuildId?.());
+    const resolvedGuildId = asId(guildId) || selectedGuildId;
+    const originLayout = {
+        width: 0,
+        height: 0,
+        x: Number(nativeEvent?.pageX) || 0,
+        y: Number(nativeEvent?.pageY) || 0,
+        resizeMode: "fill",
+    };
+
     const Image = ReactNative.Image;
     const open = (width: number, height: number) => {
         try {
+            findByProps("hideActionSheet")?.hideActionSheet?.();
             viewer.openMediaModal({
-                initialSources: [{ uri: url, sourceURI: url, width, height, mediaIndex: 0 }],
+                initialSources: [{
+                    uri: url,
+                    sourceURI: url,
+                    width,
+                    height,
+                    mediaIndex: 0,
+                    guildId: resolvedGuildId,
+                    channelId,
+                }],
                 initialIndex: 0,
+                originLayout,
                 shareable: true,
                 disableDownload: false,
             });
@@ -335,13 +357,14 @@ function patchHeaderAvatar(): void {
         if (!active || !storage.enabled || !storage.openAvatar || !rendered || !props?.user) return rendered;
         const url = avatarUrl(props.user, props.guildId);
         if (!url) return rendered;
-        const onPress = () => openAvatar(url);
+        const onPress = (event: AnyObject) => openAvatar(url, event, props.guildId);
+        const onLongPress = (event: AnyObject) => openAvatar(url, event, props.guildId);
 
         try {
             if (rendered?.props && typeof rendered.props.onPress === "function") {
-                return React.cloneElement(rendered, { onPress });
+                return React.cloneElement(rendered, { onPress, onLongPress });
             }
-            return React.createElement(ReactNative.Pressable, { onPress, style: props.style }, rendered);
+            return React.createElement(ReactNative.Pressable, { onPress, onLongPress, style: props.style }, rendered);
         } catch (error) {
             logger.error("[Staff Skill] Could not attach avatar viewer:", error);
             return rendered;
